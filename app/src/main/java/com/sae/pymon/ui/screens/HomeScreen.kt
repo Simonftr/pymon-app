@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -20,7 +19,11 @@ import androidx.compose.ui.unit.dp
 import com.sae.pymon.R
 
 @Composable
-fun HomeScreen(modifier: Modifier) {
+fun HomeScreen(
+    modifier: Modifier,
+    gameUiState: GameState,
+    onColorPressed: (String) -> Unit
+) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -31,18 +34,17 @@ fun HomeScreen(modifier: Modifier) {
             Text(
                 text = "Pymon!",
             )
-            ButtonPymon(Color.Cyan)
-            ButtonPymon(Color.Red)
-            ButtonPymon(Color.Green)
+            ButtonPymon(Color.Cyan) {onColorPressed("cyan")}
+
 
         }
     }
 }
 
 @Composable
-fun ButtonPymon(color: Color) {
+fun ButtonPymon(color: Color, onPressed: () -> Unit) {
     Surface(
-        onClick = { Log.d("Button","Click ${color}")},
+        onClick = { onPressed() },
         color = color,
         shape = RoundedCornerShape(dimensionResource(R.dimen.surface_color_corner_radius)),
         modifier = Modifier.width(150.dp)
@@ -63,6 +65,6 @@ fun HomeScreenPreview() {
 @Preview(showBackground = true)
 @Composable
 fun ButtonPreview() {
-    ButtonPymon(Color.Cyan)
+    ButtonPymon(Color.Cyan, {})
 
 }
