@@ -27,19 +27,22 @@ class GameViewModel(
     private val _state = MutableStateFlow(GameState())
     val state = _state.asStateFlow()
 
-    fun onColorPressed(color: String) {
-        viewModelScope.launch {
-            Log.d("Pressed", "onColorPressed $color")
+    init {
+        repository.connect()
+    }
 
-            val correct = repository.sendPlayerInput(color)
-            _state.update {
-                if (correct) {
-                    it.copy(score = it.score + 1, message = "Correct ✅")
-                } else {
-                    it.copy(message = "Erreur ❌")
-                }
-            }
+    fun onColorPressed(color: String) {
+        // Coroutine pour envoyer la couleur au serveur
+        Log.d("onColorPressed", "pressed")
+        viewModelScope.launch {
+            repository.sendPlayerInput(color)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.disconnect()
+
     }
 
     companion object {

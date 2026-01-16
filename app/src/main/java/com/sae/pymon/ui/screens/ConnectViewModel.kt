@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.sae.pymon.PymonApplication
 import com.sae.pymon.data.GameRepository
+import com.sae.pymon.network.ConnectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 data class ConnectUiState(
     val username: String = "",
     val isLoading: Boolean = false,
+    val isConnected: Boolean = false,
     val error: String? = null
 )
 
@@ -30,18 +32,35 @@ class ConnectViewModel(
         _uiState.update { it.copy(username = value) }
     }
 
-    fun connect(onSuccess: () -> Unit) {
+    fun connect() {
+        repository.connect()
+    }
+
+    init {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            repository.connectionState.collect { state ->
+                when (state) {
+                    ConnectionState.CONNECTING ->
+                        _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val success = repository.joinGame(_uiState.value.username)
+                    ConnectionState.CONNECTED ->
+                        _uiState.update { it.copy(isLoading = false, isConnected = true) }
 
-            _uiState.update { it.copy(isLoading = false) }
+                    ConnectionState.ERROR ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "Connexion échouée"
+                            )
+                        }
 
-            if (success) onSuccess()
-            else _uiState.update { it.copy(error = "Connexion refusée") }
+                    ConnectionState.DISCONNECTED -> Unit
+                }
+            }
         }
     }
+
+
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

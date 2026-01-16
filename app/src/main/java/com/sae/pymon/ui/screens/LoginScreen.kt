@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,10 +32,16 @@ fun LoginScreen (
     navController: NavController,
     connectUiState: ConnectUiState,
     onUsernameChange: (String) -> Unit,
-    onClickConnect: ( () -> Unit) -> Unit,
+    onClickConnect:  () -> Unit ,
     onLoginSuccess: () -> Unit
 
 ) {
+    LaunchedEffect(connectUiState.isConnected) {
+        if (connectUiState.isConnected) {
+            onLoginSuccess()
+        }
+    }
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -72,9 +79,7 @@ fun LoginScreen (
 
             // 🔌 Bouton connexion
             Button(
-                onClick = {
-                    onClickConnect(onLoginSuccess)
-                },
+                onClick = onClickConnect,
                 enabled = connectUiState.username.isNotBlank() && !connectUiState.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {

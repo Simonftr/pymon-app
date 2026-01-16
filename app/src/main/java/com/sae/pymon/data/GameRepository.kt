@@ -1,22 +1,32 @@
 package com.sae.pymon.data
 
-import com.sae.pymon.network.ApiService
+import android.util.Log
+import com.sae.pymon.network.ConnectionState
+import com.sae.pymon.network.WebSocketService
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 
 interface GameRepository {
-    suspend fun joinGame(username: String) : Boolean
-    suspend fun sendPlayerInput(color: String) : Boolean
+    val connectionState: StateFlow<ConnectionState>
+    val incomingMessages: Flow<String>
 
+    fun sendPlayerInput(color: String)
+    fun connect()
+    fun disconnect()
 }
 
 class NetworkGameRepository(
-    private val apiService: ApiService
+    private val wsService: WebSocketService
 ) : GameRepository {
-    override suspend fun joinGame(username: String): Boolean {
-        return apiService.joinGame(username)
+    override val incomingMessages: Flow<String> = wsService.incomingMessages
+    override val connectionState = wsService.connectionState
+
+    override fun connect() = wsService.connect()
+    override fun disconnect() = wsService.disconnect()
+
+    override fun sendPlayerInput(color: String) {
+        wsService.sendMessage(color)
     }
 
-    override suspend fun sendPlayerInput(color: String): Boolean {
-        return apiService.sendPlayerInput(color)
-    }
 }

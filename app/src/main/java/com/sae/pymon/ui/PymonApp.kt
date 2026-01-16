@@ -25,10 +25,7 @@ sealed class Screen(val route: String) {
 @Composable
 fun PymonApp(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-
-    Scaffold() { innerPadding ->
-
-
+    Scaffold { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Login.route
@@ -54,7 +51,10 @@ fun PymonApp(modifier: Modifier = Modifier) {
                 val gameViewModel: GameViewModel =
                     viewModel(factory = GameViewModel.Factory)
                 val gameUiState by gameViewModel.state.collectAsState()
-                GameScreen(modifier = Modifier.padding(innerPadding), gameUiState = gameUiState, onColorPressed = gameViewModel::onColorPressed)
+                GameScreen(
+                    modifier = Modifier.padding(innerPadding),
+                    gameUiState = gameUiState,
+                    onColorPressed = gameViewModel::onColorPressed)
             }
 
         }
