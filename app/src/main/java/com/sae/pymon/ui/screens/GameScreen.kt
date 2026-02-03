@@ -41,10 +41,10 @@ enum class Colors(
     val uiColor: Color,
     val code: String
 ) {
-    BLUE(SimonBlue, "B"),
-    RED(SimonRed, "R"),
-    GREEN(SimonGreen, "G"),
-    YELLOW(SimonYellow, "Y")
+    BLUE(SimonBlue, "b"),
+    RED(SimonRed, "r"),
+    GREEN(SimonGreen, "v"),
+    YELLOW(SimonYellow, "j")
 }
 
 @Composable
@@ -53,7 +53,7 @@ fun GameScreen(
     gameUiState: GameState,
     onColorPressed: (String) -> Unit
 ) {
-    val colors = Colors.values().toList()
+    val colors = Colors.entries
 
     Box(
         contentAlignment = Alignment.Center,
