@@ -94,7 +94,6 @@ fun LoginScreen (
                 }
             }
 
-            // ❌ Message d’erreur
             connectUiState.error?.let { error ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(

@@ -29,20 +29,73 @@ sealed class ServerMessage {
 }
 
 @Serializable
-data class InfoMessage(
-    override val type: String = "info",
-    val message: String
+data class GameOver(
+    override val type: String = "game_over",
+    val winner: String,
 ) : ServerMessage()
 
 @Serializable
-data class SequenceMessage(
-    override val type: String = "sequence",
-    val count: Int
+data class Welcome(
+    override val type: String = "welcome",
+    val player_id: String,
 ) : ServerMessage()
+
+
+@Serializable
+data class Eliminated(
+    override val type: String = "eliminated",
+) : ServerMessage()
+
+@Serializable
+data class RoundMessage(
+    override val type: String = "next_round",
+    val sequence: Int
+) : ServerMessage()
+
+@Serializable
+data class PlayerEliminated(
+    override val type: String = "player_eliminated",
+    val player_id: String,
+) : ServerMessage()
+
+@Serializable
+data class PlayerConnected(
+    override val type: String = "player_connected",
+    val player_id: String,
+    val username: String
+) : ServerMessage()
+
+@Serializable
+data class PlayerDisconnected(
+    override val type: String = "player_disconnected",
+    val player_id: String,
+) : ServerMessage()
+
+@Serializable
+data class PlayerReady(
+    override val type: String = "player_ready",
+    val player_id: String,
+) : ServerMessage()
+
+@Serializable
+data class PlayerFinish(
+    override val type: String = "player_finish",
+    val player_id: String,
+) : ServerMessage()
+
+@Serializable
+data class PlayerScore(
+    override val type: String = "player_score",
+    val player_id: String,
+    val score: Int
+) : ServerMessage()
+
+
+
 @Serializable
 data class PlayerInputMessage(
     val type: String,
-    val input: List<String>
+    val input: String
 )
 
 class WebSocketService(private val serverUrl: String) {
@@ -71,8 +124,17 @@ class WebSocketService(private val serverUrl: String) {
         val type = element.jsonObject["type"]?.jsonPrimitive?.content
 
         return when (type) {
-            "info" -> json.decodeFromJsonElement<InfoMessage>(element)
-            "sequence" -> json.decodeFromJsonElement<SequenceMessage>(element)
+            "game_over" -> json.decodeFromJsonElement<GameOver>(element)
+            "next_round" -> json.decodeFromJsonElement<RoundMessage>(element)
+            "player_connected" -> json.decodeFromJsonElement<PlayerConnected>(element)
+            "player_disconnected" -> json.decodeFromJsonElement<PlayerDisconnected>(element)
+            "player_ready" -> json.decodeFromJsonElement<PlayerReady>(element)
+            "player_eliminated" -> json.decodeFromJsonElement<PlayerEliminated>(element)
+            "player_finish" -> json.decodeFromJsonElement<PlayerFinish>(element)
+            "eliminated" -> json.decodeFromJsonElement<Eliminated>(element)
+            "player_score" -> json.decodeFromJsonElement<PlayerScore>(element)
+            "welcome" -> json.decodeFromJsonElement<Welcome>(element)
+
             else -> null
         }
     }
@@ -88,7 +150,6 @@ class WebSocketService(private val serverUrl: String) {
             override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
                 Log.d("WebSocket", "Connected to server")
                 _connectionState.value = ConnectionState.CONNECTED
-
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -111,13 +172,11 @@ class WebSocketService(private val serverUrl: String) {
                 _connectionState.value = ConnectionState.ERROR
             }
         })
-        webSocket?.send("{\"type\":\"start_game\"}")
     }
 
-    fun sendMessage(message: MutableList<String>, type: String) {
+    fun sendMessage(message: String) {
         Log.d("WebSocket", "Message send: $message")
-        val input = PlayerInputMessage(type = type, input = message)
-        webSocket?.send(Json.encodeToString(input))
+        webSocket?.send(message)
     }
 
     fun disconnect() {

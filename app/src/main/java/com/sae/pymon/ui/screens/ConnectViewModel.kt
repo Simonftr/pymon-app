@@ -34,6 +34,7 @@ class ConnectViewModel(
 
     fun connect() {
         repository.connect()
+
     }
 
     init {
@@ -43,8 +44,10 @@ class ConnectViewModel(
                     ConnectionState.CONNECTING ->
                         _uiState.update { it.copy(isLoading = true, error = null) }
 
-                    ConnectionState.CONNECTED ->
+                    ConnectionState.CONNECTED ->{
                         _uiState.update { it.copy(isLoading = false, isConnected = true) }
+                        repository.sendName(_uiState.value.username)}
+
 
                     ConnectionState.ERROR ->
                         _uiState.update {

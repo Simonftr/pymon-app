@@ -1,6 +1,5 @@
 package com.sae.pymon.ui
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -13,6 +12,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sae.pymon.ui.screens.ConnectViewModel
+import com.sae.pymon.ui.screens.GameModeScreen
+import com.sae.pymon.ui.screens.GameModeViewModel
 import com.sae.pymon.ui.screens.GameScreen
 import com.sae.pymon.ui.screens.LoginScreen
 
@@ -41,11 +42,25 @@ fun PymonApp(modifier: Modifier = Modifier) {
                     connectUiState = connectUiState,
                     onUsernameChange = connectViewModel::onUsernameChange,
                     onLoginSuccess = {
-                        navController.navigate(Screen.Game.route) {
+                        navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     },
                     onClickConnect = connectViewModel::connect)
+            }
+            composable(Screen.Home.route) {
+                val gameModeViewModel: GameModeViewModel =
+                    viewModel(factory = GameModeViewModel.Factory)
+                GameModeScreen(
+                    onSoloClick = {
+                        gameModeViewModel.onSoloSelected()
+                        navController.navigate(Screen.Game.route)
+                    },
+                    onMultiClick = {
+                        gameModeViewModel.onMultiSelected()
+                        navController.navigate(Screen.Game.route)
+                    }
+                )
             }
             composable(Screen.Game.route) {
                 val gameViewModel: GameViewModel =
@@ -54,9 +69,11 @@ fun PymonApp(modifier: Modifier = Modifier) {
                 GameScreen(
                     modifier = Modifier.padding(innerPadding),
                     gameUiState = gameUiState,
-                    onColorPressed = gameViewModel::onColorPressed)
+                    onColorPressed = gameViewModel::onColorPressed,
+                    onReady = gameViewModel::onReady,
+                    resetGameOver = gameViewModel::resetGameOver
+                )
             }
-
         }
     }
 }

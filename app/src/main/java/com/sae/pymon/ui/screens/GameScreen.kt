@@ -1,40 +1,51 @@
 package com.sae.pymon.ui.screens
 
-import android.view.GestureDetector
+import android.view.Surface
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.sae.pymon.R
+import com.sae.pymon.haptic.HapticManager
+import com.sae.pymon.sound.SoundManager
 import com.sae.pymon.ui.theme.SimonBlue
 import com.sae.pymon.ui.theme.SimonGreen
 import com.sae.pymon.ui.theme.SimonRed
 import com.sae.pymon.ui.theme.SimonYellow
+import com.sae.pymon.ui.theme.shake
 
 
 enum class Colors(
@@ -46,67 +57,256 @@ enum class Colors(
     GREEN(SimonGreen, "v"),
     YELLOW(SimonYellow, "j")
 }
-
 @Composable
 fun GameScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     gameUiState: GameState,
-    onColorPressed: (String) -> Unit
+    onColorPressed: (String) -> Unit,
+    onReady: () -> Unit,
+    resetGameOver: () -> Unit,
 ) {
     val colors = Colors.entries
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 140.dp),
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(items=colors) { color ->
-                ColorButton(
-                    color = color.uiColor,
-                    onClick = { onColorPressed(color.code) },
-                    modifier = Modifier.fillMaxWidth()
-                        .aspectRatio(1f)
-                )
-            }
+    LaunchedEffect(gameUiState.isGameOver) {
+        if (gameUiState.isGameOver) {
+            HapticManager.error()
         }
     }
 
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Spacer(Modifier.height(16.dp))
+
+        // 👥 Players (compact)
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(gameUiState.players) { player ->
+                PlayerChip(player)
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Box(
+            modifier = Modifier.fillMaxSize().weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shake(gameUiState.isGameOver),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                items(colors) { color ->
+                    ColorButton(
+                        color = color,
+                        enabled = gameUiState.inputsEnabled,
+                        onClick = { onColorPressed(color.code) },
+                        modifier = Modifier.aspectRatio(1f)
+                    )
+                }
+            }
+        }
+
+
+
+
+        Spacer(Modifier.height(16.dp))
+
+        if (!gameUiState.isReady) {
+            Button(
+                onClick = onReady,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("Prêt")
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+
+    }
+    if (gameUiState.isGameOver) {
+        ResultPopup(gameUiState = gameUiState, resetGameOver = resetGameOver)
+    }
 }
 
 
 @Composable
 fun ColorButton(
-    color: Color,
+    color: Colors,
+    enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
+
 ) {
+    var pressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.90f else 1f,
+        animationSpec = spring(
+            dampingRatio = 0.55f,
+            stiffness = 700f
+        ),
+        label = "scale"
+    )
+
+    val elevation by animateFloatAsState(
+        targetValue = if (pressed) 2f else 12f,
+        animationSpec = spring(stiffness = 600f),
+        label = "elevation"
+    )
+
+    val displayColor = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant
+        pressed -> color.uiColor.copy(alpha = 0.80f)
+        else -> color.uiColor
+    }
+
     Surface(
-        modifier = modifier,
-        color = color,
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown()
+                        pressed = true
+
+                        HapticManager.tap()
+
+                        SoundManager.play(color.code)
+
+                        val up = waitForUpOrCancellation()
+                        pressed = false
+
+                        if (up != null) {
+                            onClick()
+                        }
+                    }
+                }
+            },
         shape = MaterialTheme.shapes.large,
-        onClick = onClick,
-        tonalElevation = 6.dp
-    ) {}
+        color = displayColor,
+        tonalElevation = elevation.dp,
+        shadowElevation = elevation.dp
+    ) {
+        // ✨ Flash overlay léger
+        if (pressed) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.08f))
+            )
+        }
+    }
 }
+
+@Composable
+fun PlayerChip(player: PlayerUi) {
+    val color = when (player.status) {
+        PlayerStatus.READY -> MaterialTheme.colorScheme.primary
+        PlayerStatus.ELIMINATED -> MaterialTheme.colorScheme.error
+        PlayerStatus.NORMAL -> MaterialTheme.colorScheme.onSurface
+        PlayerStatus.FINISH -> MaterialTheme.colorScheme.tertiary
+        PlayerStatus.WINNER -> Color(0xFFFFD700)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(50),
+        tonalElevation = 4.dp
+    ) {
+        Text(
+            text = "${player.username} • ${player.score}",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = color,
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+}
+
+@Composable
+fun ResultPopup(gameUiState: GameState, resetGameOver: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f)), // fond semi-transparent
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 16.dp,
+            shadowElevation = 16.dp,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(24.dp)
+            ) {
+                val message = when {
+                    gameUiState.isGameOver -> "Partie terminée !"
+                    else -> ""
+                }
+
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "Votre score : ${gameUiState.score}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Button(onClick = { resetGameOver() }) {
+                    Text("OK")
+                }
+            }
+        }
+    }
+}
+
 
 @Preview(showBackground = true,  widthDp = 360,
     heightDp = 640)
 @Composable
 fun GameScreenPreview() {
-    GameScreen(modifier = Modifier, gameUiState = GameState()) { }
+    val gameUiState = GameState(
+        inputsEnabled = true,
+        players = listOf(
+            PlayerUi(id = "1", username ="Player1", status = PlayerStatus.NORMAL, score = 0),
+            PlayerUi(id = "2", username ="Player2", status = PlayerStatus.READY, score = 2),
+            PlayerUi(id = "3", username ="Player3", status = PlayerStatus.ELIMINATED, score = 10)
+        )
+    )
+    GameScreen(gameUiState = gameUiState, onColorPressed = {}, onReady = {}, resetGameOver = {})
 }
 
 @Preview(showBackground = true,  widthDp = 100,
     heightDp = 360)
 @Composable
 fun GameScreenPreviewD() {
-    GameScreen(modifier = Modifier, gameUiState = GameState()) { }
+    GameScreen(gameUiState = GameState(), onColorPressed = {}, onReady = {}, resetGameOver = {})
 }
 
 @Preview(showBackground = true)
@@ -117,9 +317,24 @@ fun HomeScreenPreview() {
     )
 }
 
+@Preview(showBackground = true)
+@Composable
+fun ResultPopUpPreview() {
+    val gameUiState = GameState(
+        inputsEnabled = true,
+        players = listOf(
+            PlayerUi(id = "1", username ="Player1", status = PlayerStatus.NORMAL, score = 0),
+            PlayerUi(id = "2", username ="Player2", status = PlayerStatus.READY, score = 2),
+            PlayerUi(id = "3", username ="Player3", status = PlayerStatus.ELIMINATED, score = 10)
+        ),
+        isGameOver = true
+    )
+    ResultPopup(gameUiState = gameUiState, {})
+}
+
 
 @Preview(showBackground = true)
 @Composable
 fun ButtonPreview() {
-    ColorButton( Color.Red, {}, modifier = Modifier.size(50.dp))
+    ColorButton( Colors.RED, true, {}, modifier = Modifier.size(50.dp))
 }

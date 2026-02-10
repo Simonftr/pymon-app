@@ -3,10 +3,13 @@ package com.sae.pymon.data
 import android.R
 import android.util.Log
 import com.sae.pymon.network.ConnectionState
+import com.sae.pymon.network.PlayerInputMessage
 import com.sae.pymon.network.ServerMessage
 import com.sae.pymon.network.WebSocketService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 
 interface GameRepository {
@@ -15,9 +18,12 @@ interface GameRepository {
     val serverEvents: Flow<ServerMessage>
 
 
-    fun sendPlayerInput(colors: MutableList<String>, type: String)
+    fun sendPlayerInput(message: String, type: String)
+    fun sendName(username: String)
+
     fun connect()
     fun disconnect()
+    fun sendGameMode(gameMode: String)
 }
 
 class NetworkGameRepository(
@@ -31,8 +37,16 @@ class NetworkGameRepository(
     override fun connect() = wsService.connect()
     override fun disconnect() = wsService.disconnect()
 
-    override fun sendPlayerInput(colors: MutableList<String>, type: String) {
-        wsService.sendMessage(colors, type)
+    override fun sendPlayerInput(message: String, type: String) {
+        val playerInput = PlayerInputMessage(type = type, message)
+        wsService.sendMessage(Json.encodeToString(playerInput))
     }
-
+    override fun sendName(username: String) {
+        val playerInput = PlayerInputMessage(type = "username", username)
+        wsService.sendMessage(Json.encodeToString(playerInput))
+    }
+    override fun sendGameMode(gameMode: String) {
+        val playerInput = PlayerInputMessage(type = "game_mode", gameMode)
+        wsService.sendMessage(Json.encodeToString(playerInput))
+    }
 }
