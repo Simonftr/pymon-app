@@ -36,7 +36,7 @@ data class GameState(
     val inputsEnabled: Boolean = false,
     val isReady: Boolean = false,
     val isGameOver: Boolean = false,
-    val myPlayerId: String = ""
+    val myPlayerId: Int = 0
 )
 
 
@@ -54,11 +54,6 @@ class GameViewModel(
                     is GameOver -> {
                         _state.update { state ->
                             state.copy(
-                                players = state.players.map {
-                                    if (it.id == event.winner)
-                                        it.copy(status = PlayerStatus.WINNER)
-                                    else it
-                                },
                                 isReady = false,
                                 inputsEnabled = false,
                                 isGameOver = true,
@@ -71,8 +66,7 @@ class GameViewModel(
                             state.copy(
                                 expectedInputs = event.sequence,
                                 receivedInputs = 0,
-                                inputsEnabled = true,
-                                isGameOver = false,
+                                inputsEnabled = !state.isGameOver,
                                 players = state.players.map {
                                     if (it.status == PlayerStatus.FINISH)
                                         it.copy(status = PlayerStatus.NORMAL)
@@ -113,6 +107,7 @@ class GameViewModel(
                                         it.copy(status = PlayerStatus.READY)
                                     else it
                                 },
+                                isGameOver = false
                             )
                         }
                     }

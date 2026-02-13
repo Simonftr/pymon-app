@@ -2,8 +2,10 @@ package com.sae.pymon.data
 
 import android.R
 import android.util.Log
+import com.sae.pymon.network.ApiService
 import com.sae.pymon.network.ConnectionState
 import com.sae.pymon.network.PlayerInputMessage
+import com.sae.pymon.network.ScoreResponse
 import com.sae.pymon.network.ServerMessage
 import com.sae.pymon.network.WebSocketService
 import kotlinx.coroutines.flow.Flow
@@ -24,10 +26,12 @@ interface GameRepository {
     fun connect()
     fun disconnect()
     fun sendGameMode(gameMode: String)
+    suspend fun  getScores(): List<ScoreResponse>
 }
 
 class NetworkGameRepository(
-    private val wsService: WebSocketService
+    private val wsService: WebSocketService,
+    private val apiService: ApiService
 ) : GameRepository {
     override val serverEvents = wsService.serverEvents
 
@@ -49,4 +53,7 @@ class NetworkGameRepository(
         val playerInput = PlayerInputMessage(type = "game_mode", gameMode)
         wsService.sendMessage(Json.encodeToString(playerInput))
     }
+
+    override suspend fun getScores(): List<ScoreResponse> = apiService.getScores()
+
 }

@@ -1,7 +1,7 @@
 package com.sae.pymon.ui.screens
 
 data class PlayerUi(
-    val id: String,
+    val id: Int,
     val status: PlayerStatus,
     val username: String,
     val score: Int

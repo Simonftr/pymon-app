@@ -18,12 +18,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sae.pymon.ui.theme.SimonBlue
 import com.sae.pymon.ui.theme.SimonRed
+import com.sae.pymon.ui.theme.SimonYellow
 
 @Composable
 fun GameModeScreen(
     modifier: Modifier = Modifier,
     onSoloClick: () -> Unit,
-    onMultiClick: () -> Unit
+    onMultiClick: () -> Unit,
+    onScoreClick: () -> Unit
+
 ) {
     Column(
         modifier = modifier
@@ -50,6 +53,13 @@ fun GameModeScreen(
             description = "Affronte les autres joueurs en ligne",
             color = SimonRed,
             onClick = onMultiClick
+        )
+
+        GameModeCard(
+            title = "Score",
+            description = "Voir le score des joueurs",
+            color = SimonYellow,
+            onClick = onScoreClick
         )
     }
 }
@@ -99,6 +109,7 @@ fun GameModeCard(
 fun GameModeScreenPreview() {
     GameModeScreen(
         onSoloClick = {},
-        onMultiClick = {}
+        onMultiClick = {},
+        onScoreClick = {}
     )
 }

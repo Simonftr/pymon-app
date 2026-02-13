@@ -1,6 +1,7 @@
 package com.sae.pymon.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,17 +17,24 @@ import com.sae.pymon.ui.screens.GameModeScreen
 import com.sae.pymon.ui.screens.GameModeViewModel
 import com.sae.pymon.ui.screens.GameScreen
 import com.sae.pymon.ui.screens.LoginScreen
+import com.sae.pymon.ui.screens.ScoreScreen
+import com.sae.pymon.ui.screens.ScoreViewModel
 
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
     object Game : Screen("game")
+    object Score : Screen("score")
+
 }
 @Composable
 fun PymonApp(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    Scaffold { innerPadding ->
+    Scaffold(
+        modifier = Modifier.systemBarsPadding()
+
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Login.route
@@ -59,6 +67,9 @@ fun PymonApp(modifier: Modifier = Modifier) {
                     onMultiClick = {
                         gameModeViewModel.onMultiSelected()
                         navController.navigate(Screen.Game.route)
+                    },
+                    onScoreClick = {
+                        navController.navigate(Screen.Score.route)
                     }
                 )
             }
@@ -72,6 +83,15 @@ fun PymonApp(modifier: Modifier = Modifier) {
                     onColorPressed = gameViewModel::onColorPressed,
                     onReady = gameViewModel::onReady,
                     resetGameOver = gameViewModel::resetGameOver
+                )
+            }
+            composable(Screen.Score.route) {
+                val scoreViewModel: ScoreViewModel =
+                    viewModel(factory = ScoreViewModel.Factory)
+                ScoreScreen(
+                    modifier = Modifier,
+                    scoreUiState = scoreViewModel.scoreUiState,
+                    retryAction = scoreViewModel::loadScore
                 )
             }
         }

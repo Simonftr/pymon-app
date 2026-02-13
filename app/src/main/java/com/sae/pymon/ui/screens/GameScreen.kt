@@ -9,6 +9,8 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,6 +59,7 @@ enum class Colors(
     GREEN(SimonGreen, "v"),
     YELLOW(SimonYellow, "j")
 }
+
 @Composable
 fun GameScreen(
     modifier: Modifier = Modifier,
@@ -68,80 +71,68 @@ fun GameScreen(
     val colors = Colors.entries
 
     LaunchedEffect(gameUiState.isGameOver) {
-        if (gameUiState.isGameOver) {
-            HapticManager.error()
-        }
+        if (gameUiState.isGameOver) HapticManager.error()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        Spacer(Modifier.height(16.dp))
-
-        // 👥 Players (compact)
+        // 🔹 Joueurs en haut
         LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            items(gameUiState.players) { player ->
-                PlayerChip(player)
-            }
+            items(gameUiState.players) { player -> PlayerChip(player) }
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        Box(
-            modifier = Modifier.fillMaxSize().weight(1f),
-            contentAlignment = Alignment.Center
+        // 🔹 Grille centrée
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shake(gameUiState.isGameOver),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                items(colors) { color ->
-                    ColorButton(
-                        color = color,
-                        enabled = gameUiState.inputsEnabled,
-                        onClick = { onColorPressed(color.code) },
-                        modifier = Modifier.aspectRatio(1f)
-                    )
+            colors.chunked(2).forEach { rowColors ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    rowColors.forEach { color ->
+                        ColorButton(
+                            color = color,
+                            enabled = gameUiState.inputsEnabled,
+                            onClick = { onColorPressed(color.code) },
+                            modifier = Modifier.size(140.dp) // taille carrée fixe
+                        )
+                    }
                 }
             }
         }
 
-
-
-
-        Spacer(Modifier.height(16.dp))
-
+        // 🔹 Bouton Prêt en bas
         if (!gameUiState.isReady) {
             Button(
                 onClick = onReady,
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(72.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
                 Text("Prêt")
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-
-
-    }
-    if (gameUiState.isGameOver) {
-        ResultPopup(gameUiState = gameUiState, resetGameOver = resetGameOver)
+        // 🔹 Popup superposé
+        if (gameUiState.isGameOver) {
+            ResultPopup(
+                gameUiState = gameUiState,
+                resetGameOver = resetGameOver,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
     }
 }
-
 
 @Composable
 fun ColorButton(
@@ -149,73 +140,60 @@ fun ColorButton(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-
 ) {
     var pressed by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.90f else 1f,
-        animationSpec = spring(
-            dampingRatio = 0.55f,
-            stiffness = 700f
-        ),
-        label = "scale"
+        targetValue = if (pressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 700f)
     )
 
     val elevation by animateFloatAsState(
-        targetValue = if (pressed) 2f else 12f,
-        animationSpec = spring(stiffness = 600f),
-        label = "elevation"
+        targetValue = if (pressed) 4f else 12f,
+        animationSpec = spring(stiffness = 600f)
     )
 
     val displayColor = when {
         !enabled -> MaterialTheme.colorScheme.surfaceVariant
-        pressed -> color.uiColor.copy(alpha = 0.80f)
+        pressed -> color.uiColor.copy(alpha = 0.85f)
         else -> color.uiColor
     }
 
-    Surface(
+    Box(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .pointerInput(enabled) {
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize().pointerInput(enabled) {
                 if (!enabled) return@pointerInput
-
                 awaitPointerEventScope {
                     while (true) {
                         val down = awaitFirstDown()
                         pressed = true
-
                         HapticManager.tap()
-
                         SoundManager.play(color.code)
-
                         val up = waitForUpOrCancellation()
                         pressed = false
-
-                        if (up != null) {
-                            onClick()
-                        }
+                        if (up != null) onClick()
                     }
                 }
             },
-        shape = MaterialTheme.shapes.large,
-        color = displayColor,
-        tonalElevation = elevation.dp,
-        shadowElevation = elevation.dp
-    ) {
-        // ✨ Flash overlay léger
-        if (pressed) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White.copy(alpha = 0.08f))
-            )
+            shape = MaterialTheme.shapes.large,
+            color = displayColor,
+            tonalElevation = elevation.dp,
+            shadowElevation = elevation.dp
+        ) {
+            if (pressed) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                        .background(Color.White.copy(alpha = 0.08f))
+                )
+            }
         }
     }
 }
+
+
 
 @Composable
 fun PlayerChip(player: PlayerUi) {
@@ -229,7 +207,8 @@ fun PlayerChip(player: PlayerUi) {
 
     Surface(
         shape = RoundedCornerShape(50),
-        tonalElevation = 4.dp
+        tonalElevation = 4.dp,
+        shadowElevation = 4.dp
     ) {
         Text(
             text = "${player.username} • ${player.score}",
@@ -241,11 +220,15 @@ fun PlayerChip(player: PlayerUi) {
 }
 
 @Composable
-fun ResultPopup(gameUiState: GameState, resetGameOver: () -> Unit) {
+fun ResultPopup(
+    gameUiState: GameState,
+    resetGameOver: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)), // fond semi-transparent
+            .background(Color.Black.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -259,11 +242,7 @@ fun ResultPopup(gameUiState: GameState, resetGameOver: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(24.dp)
             ) {
-                val message = when {
-                    gameUiState.isGameOver -> "Partie terminée !"
-                    else -> ""
-                }
-
+                val message = if (gameUiState.isGameOver) "Partie terminée !" else ""
                 Text(
                     text = message,
                     style = MaterialTheme.typography.headlineSmall,
@@ -278,14 +257,15 @@ fun ResultPopup(gameUiState: GameState, resetGameOver: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Button(onClick = { resetGameOver() }) {
+                Spacer(Modifier.height(24.dp))
+
+                Button(onClick = resetGameOver) {
                     Text("OK")
                 }
             }
         }
     }
 }
-
 
 @Preview(showBackground = true,  widthDp = 360,
     heightDp = 640)
@@ -294,10 +274,13 @@ fun GameScreenPreview() {
     val gameUiState = GameState(
         inputsEnabled = true,
         players = listOf(
-            PlayerUi(id = "1", username ="Player1", status = PlayerStatus.NORMAL, score = 0),
-            PlayerUi(id = "2", username ="Player2", status = PlayerStatus.READY, score = 2),
-            PlayerUi(id = "3", username ="Player3", status = PlayerStatus.ELIMINATED, score = 10)
-        )
+            PlayerUi(id = 1, username ="Player1", status = PlayerStatus.NORMAL, score = 0),
+            PlayerUi(id = 2, username ="Player2", status = PlayerStatus.READY, score = 2),
+            PlayerUi(id = 3, username ="Player3", status = PlayerStatus.ELIMINATED, score = 10),
+            PlayerUi(id = 4, username ="Player4", status = PlayerStatus.FINISH, score = 1),
+            PlayerUi(id = 5, username ="Player5", status = PlayerStatus.WINNER, score = 100)
+
+        ),
     )
     GameScreen(gameUiState = gameUiState, onColorPressed = {}, onReady = {}, resetGameOver = {})
 }
@@ -323,9 +306,12 @@ fun ResultPopUpPreview() {
     val gameUiState = GameState(
         inputsEnabled = true,
         players = listOf(
-            PlayerUi(id = "1", username ="Player1", status = PlayerStatus.NORMAL, score = 0),
-            PlayerUi(id = "2", username ="Player2", status = PlayerStatus.READY, score = 2),
-            PlayerUi(id = "3", username ="Player3", status = PlayerStatus.ELIMINATED, score = 10)
+            PlayerUi(id = 1, username ="Player1", status = PlayerStatus.NORMAL, score = 0),
+            PlayerUi(id = 2, username ="Player2", status = PlayerStatus.READY, score = 2),
+            PlayerUi(id = 3, username ="Player3", status = PlayerStatus.ELIMINATED, score = 10),
+            PlayerUi(id = 4, username ="Player4", status = PlayerStatus.FINISH, score = 1),
+            PlayerUi(id = 5, username ="Player5", status = PlayerStatus.WINNER, score = 100)
+
         ),
         isGameOver = true
     )

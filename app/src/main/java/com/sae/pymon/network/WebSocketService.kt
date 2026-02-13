@@ -31,13 +31,12 @@ sealed class ServerMessage {
 @Serializable
 data class GameOver(
     override val type: String = "game_over",
-    val winner: String,
 ) : ServerMessage()
 
 @Serializable
 data class Welcome(
     override val type: String = "welcome",
-    val player_id: String,
+    val player_id: Int,
 ) : ServerMessage()
 
 
@@ -55,38 +54,38 @@ data class RoundMessage(
 @Serializable
 data class PlayerEliminated(
     override val type: String = "player_eliminated",
-    val player_id: String,
+    val player_id: Int,
 ) : ServerMessage()
 
 @Serializable
 data class PlayerConnected(
     override val type: String = "player_connected",
-    val player_id: String,
+    val player_id: Int,
     val username: String
 ) : ServerMessage()
 
 @Serializable
 data class PlayerDisconnected(
     override val type: String = "player_disconnected",
-    val player_id: String,
+    val player_id: Int,
 ) : ServerMessage()
 
 @Serializable
 data class PlayerReady(
     override val type: String = "player_ready",
-    val player_id: String,
+    val player_id: Int,
 ) : ServerMessage()
 
 @Serializable
 data class PlayerFinish(
     override val type: String = "player_finish",
-    val player_id: String,
+    val player_id: Int,
 ) : ServerMessage()
 
 @Serializable
 data class PlayerScore(
     override val type: String = "player_score",
-    val player_id: String,
+    val player_id: Int,
     val score: Int
 ) : ServerMessage()
 
