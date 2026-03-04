@@ -64,6 +64,10 @@ fun PymonApp(modifier: Modifier = Modifier) {
                         gameModeViewModel.onSoloSelected()
                         navController.navigate(Screen.Game.route)
                     },
+                    onSoloAIClick = {
+                        gameModeViewModel.onSoloAISelected()
+                        navController.navigate(Screen.Game.route)
+                    },
                     onMultiClick = {
                         gameModeViewModel.onMultiSelected()
                         navController.navigate(Screen.Game.route)

@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sae.pymon.ui.theme.SimonBlue
+import com.sae.pymon.ui.theme.SimonGreen
 import com.sae.pymon.ui.theme.SimonRed
 import com.sae.pymon.ui.theme.SimonYellow
 
@@ -25,7 +26,8 @@ fun GameModeScreen(
     modifier: Modifier = Modifier,
     onSoloClick: () -> Unit,
     onMultiClick: () -> Unit,
-    onScoreClick: () -> Unit
+    onScoreClick: () -> Unit,
+    onSoloAIClick: () -> Unit,
 
 ) {
     Column(
@@ -46,6 +48,13 @@ fun GameModeScreen(
             description = "Joue seul et bats ton meilleur score",
             color = SimonBlue,
             onClick = onSoloClick
+        )
+
+        GameModeCard(
+            title = "Solo AI",
+            description = "Joue seul et bats ton meilleur score mais l'IA adapte le jeu à ton niveau",
+            color = SimonGreen,
+            onClick = onSoloAIClick
         )
 
         GameModeCard(
@@ -110,6 +119,7 @@ fun GameModeScreenPreview() {
     GameModeScreen(
         onSoloClick = {},
         onMultiClick = {},
-        onScoreClick = {}
+        onScoreClick = {},
+        onSoloAIClick = {}
     )
 }

@@ -311,7 +311,6 @@ fun ResultPopUpPreview() {
             PlayerUi(id = 3, username ="Player3", status = PlayerStatus.ELIMINATED, score = 10),
             PlayerUi(id = 4, username ="Player4", status = PlayerStatus.FINISH, score = 1),
             PlayerUi(id = 5, username ="Player5", status = PlayerStatus.WINNER, score = 100)
-
         ),
         isGameOver = true
     )

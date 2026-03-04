@@ -15,6 +15,10 @@ class GameModeViewModel(
         repository.sendGameMode("solo")
     }
 
+    fun onSoloAISelected() {
+        repository.sendGameMode("solo_ai")
+    }
+
     fun onMultiSelected() {
         repository.sendGameMode("multiplayer")
     }
