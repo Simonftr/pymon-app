@@ -33,8 +33,8 @@ class ConnectViewModel(
     }
 
     fun connect() {
+        repository.saveUsername(_uiState.value.username)  // NOUVEAU
         repository.connect()
-
     }
 
     init {

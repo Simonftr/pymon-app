@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -59,22 +60,23 @@ fun PymonApp(modifier: Modifier = Modifier) {
             composable(Screen.Home.route) {
                 val gameModeViewModel: GameModeViewModel =
                     viewModel(factory = GameModeViewModel.Factory)
-                GameModeScreen(
-                    onSoloClick = {
-                        gameModeViewModel.onSoloSelected()
+                val gameModeUiState by gameModeViewModel.uiState.collectAsState()
+
+                // Navigation déclenchée APRÈS la reconnexion réussie
+                LaunchedEffect(gameModeUiState.navigateToGame) {
+                    if (gameModeUiState.navigateToGame) {
+                        gameModeViewModel.onNavigationHandled()
                         navController.navigate(Screen.Game.route)
-                    },
-                    onSoloAIClick = {
-                        gameModeViewModel.onSoloAISelected()
-                        navController.navigate(Screen.Game.route)
-                    },
-                    onMultiClick = {
-                        gameModeViewModel.onMultiSelected()
-                        navController.navigate(Screen.Game.route)
-                    },
-                    onScoreClick = {
-                        navController.navigate(Screen.Score.route)
                     }
+                }
+
+                GameModeScreen(
+                    uiState = gameModeUiState,
+                    onSoloClick    = { gameModeViewModel.onSoloSelected() },
+                    onSoloAIClick  = { gameModeViewModel.onSoloAISelected() },
+                    onMultiClick   = { gameModeViewModel.onMultiSelected() },
+                    onScoreClick   = { navController.navigate(Screen.Score.route) },
+                    onChangeUsername = gameModeViewModel::onChangeUsername
                 )
             }
             composable(Screen.Game.route) {
